@@ -1,6 +1,6 @@
 # GitHub Webhook Handler
 
-This project is a Flask-based application that handles GitHub webhook events (`push`, `pull_request`, and `merge`). It stores these events in a MongoDB database and provides APIs to fetch the latest events.
+This project is a Flask-based application that handles GitHub webhook events (`push`, `pull_request`, and `merge`). It stores these events in a MongoDB database and provides APIs to fetch the latest events. It has UI that poll all events from database and display 10 most recent events.
 
 ---
 
@@ -51,25 +51,94 @@ github-webhook/
 ### **1. Clone the Repository**
 ```bash
 git clone <repository_url>
-cd github-webhook
 ```
+
+---
 
 ### **2. Install Dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-### **4. Configure MongoDB**
-- Ensure MongoDB is running locally.
-- Default connection: `mongodb://localhost:27017`.
-- The database name is `github_webhooks`, and the collection name is `events`.
+---
 
-### **5. Run the Application**
-```bash
-python app.py
-```
+### **3. Configure MongoDB**
+1. **Ensure MongoDB is installed**:
+   - Download MongoDB from the [official MongoDB website](https://www.mongodb.com/try/download/community) or use a package manager like Chocolatey.
+   - Install MongoDB and start the service:
+     ```bash
+     net start MongoDB
+     ```
+2. **Default Configuration**:
+   - MongoDB runs on `mongodb://localhost:27017`.
+   - The database name is `github_webhooks`, and the collection name is `events`.
 
-- The application will run on `http://127.0.0.1:5000`.
+---
+
+### **4. Configure ngrok for Webhook URL**
+
+1. **Install ngrok**:
+   - Download ngrok for Windows from the [ngrok website](https://ngrok.com/download).
+   - Alternatively, use Chocolatey:
+     ```bash
+     choco install ngrok
+     ```
+
+2. **Authenticate ngrok** (if you have an account):
+   ```bash
+   ngrok config add-authtoken <your_auth_token>
+   ```
+   - Replace `<your_auth_token>` with the token from your ngrok account.
+
+3. **Start ngrok**:
+   ```bash
+   ngrok http 5000
+   ```
+   - This will generate a public forwarding URL like `https://<random-string>.ngrok.io`.
+
+4. **Keep ngrok Running**:
+   - Leave the terminal running to maintain the tunnel.
+
+---
+
+### **5. Add Webhook URL to GitHub**
+
+1. Open your GitHub repository.
+2. Navigate to:
+   **Settings** > **Webhooks** > **Add webhook**.
+3. Configure the webhook:
+   - **Payload URL**: Use the ngrok URL followed by your Flask route:
+     ```
+     https://<random-string>.ngrok.io/api/v1/github-webhook
+     ```
+   - **Content type**: Set to `application/json`.
+   - **Secret**: Optionally, add a secret for securing the webhook.
+   - **Events**: Select the events you want to listen to (e.g., `push`, `pull_request`, `merge`).
+4. Save the webhook.
+
+---
+
+### **6. Run the Application**
+
+1. Start your Flask app:
+   ```bash
+   set PYTHONPATH=%cd%
+   python app.py
+   ```
+2. The app will be accessible locally at:
+   ```
+   http://127.0.0.1:5000
+   ```
+3. ngrok will forward traffic from the public URL to this local address.
+
+---
+
+### **7. Test the Webhook**
+- Trigger an event (e.g., push a commit, open a pull request).
+- Check the Flask app logs to confirm the webhook event was received:
+  ```bash
+  Received GitHub event: { ... }
+  ```
 
 ---
 
@@ -131,7 +200,7 @@ python app.py
       "base": {
         "ref": "main"
       },
-      "merged_at": "2026-01-16T09:00:00Z"
+      "merged_at": "2025-01-16T09:00:00Z"
     }
   }
   ```
@@ -140,6 +209,8 @@ python app.py
   - `200 OK`: Event processed successfully.
   - `400 Bad Request`: Unsupported event type.
   - `500 Internal Server Error`: Error while processing the webhook.
+
+---
 
 ### **2. Fetch Latest Events**
 - **Endpoint**: `GET /api/v1/latest-events`
@@ -159,4 +230,3 @@ python app.py
 
 ## **Acknowledgments**
 This project is designed for handling GitHub webhooks and demonstrates a structured approach to Flask application development.
-
